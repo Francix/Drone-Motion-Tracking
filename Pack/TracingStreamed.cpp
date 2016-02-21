@@ -52,6 +52,8 @@ MoveState TracingStreamed(int frameid, int x, int y, int width, int height, int 
     // printf("now = %d\n", now);
     // 求状态
     state = queloc.findstate(now);
+    // 求location
+    state = queloc.findlocation(now, state);
     // 纠错 -- 先不管
     if((queloc.allframe % 10 == 1) && (queloc.isfull)) queloc.correct();// -- 这个有问题
     return state;

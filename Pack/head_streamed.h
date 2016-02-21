@@ -32,8 +32,11 @@ class MoveState
 {
 public:
     int x;
+    int xloc;
     int y;
+    int yloc;
     int a;
+    int aloc;
     MoveState(){}
     MoveState(int x, int y, int z);
     bool operator == (MoveState mv);
@@ -145,6 +148,8 @@ public:
     int insert(LocationNode tmpnd);
     // 计算当前状态并返回
     MoveState findstate(int tmpindex);
+    // 计算当前的location
+    MoveState findlocation(int now, MoveState state);
     // 根据现在的状态坐标，预测下一个状态，返回一个LocationNode结构
     LocationNode pridict(int tmpindex);
     // 纠正错误点

@@ -134,11 +134,6 @@ int CQueueLocation::insert(LocationNode tmpnd)
 MoveState CQueueLocation::findstate(int tmpindex)
 {
     // 位置均值变量，与平滑后的当前位置变量做比较，来判定当前状态
-    if(failstate == true)
-    {
-        MoveState state(UNKNOW, UNKNOW, UNKNOW);
-        return state;
-    }
     int xaverage, aaverage, yaverage;
     // 平滑后的当前位置变量
     int anear, xnear, ynear;
@@ -155,6 +150,13 @@ MoveState CQueueLocation::findstate(int tmpindex)
     MoveState state;
     // 遍历时的下标
     int i, j;
+
+    // 如果处于长期fail的状态，则返回UNKNOW
+    if(failstate == true)
+    {
+        MoveState state(UNKNOW, UNKNOW, UNKNOW);
+        return state;
+    }
 
     // 如果队列未满，直接返回stay
     if(!isfull)
@@ -190,11 +192,23 @@ MoveState CQueueLocation::findstate(int tmpindex)
         xnear = xnear / 15;
 
         // 求x方向的状态
-        if((xnear > xaverage) && (xnear - xaverage) > xthreshold) state.x = RIGHT;
-        else if((xnear < xaverage) && (xaverage - xnear > xthreshold)) state.x = LEFT;
-        else state.x = STAY;
+        if((xnear > xaverage) && (xnear - xaverage) > xthreshold)
+        {
+            state.x = RIGHT;
+            state.xloc = xaverage;
+        }
+        else if((xnear < xaverage) && (xaverage - xnear > xthreshold))
+        {
+            state.x = LEFT;
+            state.xloc = xaverage;
+        }
+        else
+        {
+            state.x = STAY;
+            state.xloc = pfacloc[previndex(tmpindex)].xlabel;
+        }
 
-        // 求x方向average与threshold
+        // 求y方向average与threshold
         ysum = 0;
         hsum = 0;
         i = tmpindex;
@@ -208,7 +222,7 @@ MoveState CQueueLocation::findstate(int tmpindex)
         yaverage = ysum / 6;
         ythreshold = hsum / (ydivisior * 6);
 
-        // x方向平滑，使用线性衰减
+        // y方向平滑，使用线性衰减
         ynear = 0;
         for(i = tmpindex, j = 3; j >=1; i = previndex(i), j--)
         {
@@ -217,9 +231,21 @@ MoveState CQueueLocation::findstate(int tmpindex)
         ynear = ynear / 6;
 
         // 求y方向的状态
-        if((ynear > yaverage) && (ynear - yaverage) > ythreshold) state.y = UP;
-        else if((ynear < yaverage) && (yaverage - ynear > ythreshold)) state.y = DOWN;
-        else state.y = STAY;
+        if((ynear > yaverage) && (ynear - yaverage) > ythreshold)
+        {
+            state.y = UP;
+            state.yloc = yaverage;
+        }
+        else if((ynear < yaverage) && (yaverage - ynear > ythreshold))
+        {
+            state.y = DOWN;
+            state.yloc = yaverage;
+        }
+        else
+        {
+            state.y = STAY;
+            state.yloc = pfacloc[previndex(tmpindex)].ylabel;
+        }
 
         // 求a方向的average与threshold
         asum = 0;
@@ -241,9 +267,21 @@ MoveState CQueueLocation::findstate(int tmpindex)
         anear = anear / 15;
 
         // 求a方向状态
-        if((anear > aaverage) && (anear - aaverage) > athreshold) state.a = FRONT;
-        else if((anear < aaverage) && (aaverage - anear > athreshold)) state.a = BACK;
-        else state.a = STAY;
+        if((anear > aaverage) && (anear - aaverage) > athreshold)
+        {
+            state.a = FRONT;
+            state.aloc = aaverage;
+        }
+        else if((anear < aaverage) && (aaverage - anear > athreshold))
+        {
+            state.a = BACK;
+            state.aloc = aaverage;
+        }
+        else
+        {
+            state.a = STAY;
+            state.aloc = pfacloc[previndex(tmpindex)].area;
+        }
 
         // 状态整合
         pfacloc[tmpindex].state = state;
@@ -312,23 +350,103 @@ MoveState CQueueLocation::findstate(int tmpindex)
             }
 
             // 求x方向状态
-            if(leftcnt > (interval / 2)) state.x = LEFT;
-            else if(rightcnt > (interval / 2)) state.x = RIGHT;
-            else state.x = STAY;
+            if(leftcnt > (interval / 2))
+            {
+                state.x = LEFT;
+                state.xloc = xaverage;
+            }
+            else if(rightcnt > (interval / 2))
+            {
+                state.x = RIGHT;
+                state.xloc = xaverage;
+            }
+            else
+            {
+                state.x = STAY;
+                state.xloc = pfacloc[previndex(tmpindex)].xlabel;
+            }
 
             // 求y方向状态
-            if(upcnt > (interval / 2)) state.y = UP;
-            else if(downcnt > (interval / 2)) state.y = DOWN;
-            else state.y = STAY;
+            if(upcnt > (interval / 2))
+            {
+                state.y = UP;
+                state.yloc = yaverage;
+            }
+            else if(downcnt > (interval / 2))
+            {
+                state.y = DOWN;
+                state.yloc = yaverage;
+            }
+            else
+            {
+                state.y = STAY;
+                state.yloc = pfacloc[previndex(tmpindex)].ylabel;
+            }
 
             // 求a方向状态
-            if(frontcnt > (interval / 2)) state.a = FRONT;
-            else if(backcnt > (interval / 2)) state.a = BACK;
-            else state.a = STAY;
+            if(frontcnt > (interval / 2))
+            {
+                state.a = FRONT;
+                state.aloc = aaverage;
+            }
+            else if(backcnt > (interval / 2))
+            {
+                state.a = BACK;
+                state.aloc = aaverage;
+            }
+            else
+            {
+                state.a = STAY;
+                state.aloc = pfacloc[previndex(tmpindex)].area;
+            }
 
             // 状态整合，返回状态
             return state;
         }
+    }
+}
+
+// 这个函数用来计算location
+MoveState CQueueLocation::findlocation(int now, MoveState state)
+{
+    static int xret = 0, yret = 0, aret = 0;
+    static int cnt = 0;
+    static bool isfirstround = true;
+
+    int xsum, ysum, asum;
+    int i, j;
+
+    cnt++;
+    if(isfirstround && cnt <= 5)
+    {
+        state.xloc = xret;
+        state.yloc = yret;
+        state.aloc = aret;
+        return state;
+    }
+    else
+    {
+        isfirstround = false;
+        // 每隔五帧，更新cnt
+        if(cnt > 5)
+        {
+            cnt = cnt % 5;
+            i = previndex(pnow);
+            xsum = 0, ysum = 0, asum = 0;
+            for(j = 0; j < 5; j++, i = previndex(i))
+            {
+                xsum += pfacloc[i].xlabel;
+                ysum += pfacloc[i].ylabel;
+                asum += pfacloc[i].area;
+            }
+            xret = xsum / 5;
+            yret = ysum / 5;
+            aret = asum / 5;
+        }
+        state.xloc = xret;
+        state.yloc = yret;
+        state.aloc = aret;
+        return state;
     }
 }
 
